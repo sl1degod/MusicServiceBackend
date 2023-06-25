@@ -16,6 +16,12 @@ class PlaylistController {
         res.json(playlist.rows)
     }
 
+    async addTracksToPlaylist(req, res) {
+        const {playlist_id, tracks_id} = req.body;
+        const addTracks = await database.query('insert into playlist_tracks (playlist_id, tracks_id) values ($1, $2) RETURNING *', [playlist_id, parseInt(tracks_id)]);
+        res.json(addTracks);
+    }
+
     async getAllPlaylists(req, res) {
         const playlist = await database.query('select playlist.id, playlist.name as name, count(playlist_tracks.tracks_id) as count_tracks, playlist.image as image, users.username as user from users, playlist, playlist_tracks  where playlist.user_id = users.id and playlist_tracks.playlist_id = playlist.id group by playlist.id, playlist.name, playlist.image, users.username')
         res.json(playlist.rows)
