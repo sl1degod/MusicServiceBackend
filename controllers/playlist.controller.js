@@ -2,11 +2,11 @@ const database = require('../db/database')
 const stream = require('../Stream')
 
 class PlaylistController {
-    async createPlaylist(req, res) {
-        const {name} = req.body;
-        const newPlaylist = await database.query(`insert into playlist(name, image, user_id) values($1, 'https://images.genius.com/24afe321dcba210a2b1adbeab043b10a.1000x1000x1.jpg', 1) RETURNING *`, [name])
-        res.json(newPlaylist)
-    }
+    // async createPlaylist(req, res) {
+    //     const {name} = req.body;
+    //     const newPlaylist = await database.query(`insert into playlist(name, image, user_id) values($1, 'https://images.genius.com/24afe321dcba210a2b1adbeab043b10a.1000x1000x1.jpg', 1) RETURNING *`, [name])
+    //     res.json(newPlaylist)
+    // }
 
     async getPlaylistTracks(req, res) {
         const id = req.params.id
@@ -17,9 +17,34 @@ class PlaylistController {
     }
 
     async addTracksToPlaylist(req, res) {
-        const {playlist_id, tracks_id} = req.body;
-        const addTracks = await database.query('insert into playlist_tracks (playlist_id, tracks_id) values ($1, $2) RETURNING *', [playlist_id, parseInt(tracks_id)]);
-        res.json(addTracks);
+        const {name, tracks} = req.body;
+
+        let newPlaylistID;
+
+        try {
+            const newPlaylist = await database.query(`insert into playlist(name, image, user_id) values($1, 'https://images.genius.com/24afe321dcba210a2b1adbeab043b10a.1000x1000x1.jpg', 1) RETURNING *`, [name])
+            newPlaylistID = newPlaylist?.rows[0]?.id
+
+        } catch (error) {
+            res.json({
+                message: "Во время создания плейлиста произошла ошибка"
+            })
+        }
+
+        try {
+            for (const tracks_id of tracks) {
+                await database.query('insert into playlist_tracks (playlist_id, tracks_id) values ($1, $2) RETURNING *', [newPlaylistID, tracks_id]);
+            }
+
+        } catch (error) {
+            res.json({
+                message: "Во время добавления треков в плейлист произошла ошибка"
+            })
+        }
+
+        res.json({
+            message: `Плейлист: ${name} был успешно создан, треки были добавлены`
+        });
     }
 
     async getAllPlaylists(req, res) {
